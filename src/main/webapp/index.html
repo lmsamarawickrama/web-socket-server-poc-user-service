@@ -1,0 +1,100 @@
+
+<html>
+<head>
+    <title>Chat WebSocket</title>
+
+    <script src="resources/sockjs-0.3.4.js"></script>
+    <script src="resources/stomp.js"></script>
+
+    <script type="text/javascript">
+
+        var stompClient = null;
+
+        function setConnected(connected) {
+
+            document.getElementById('connect').disabled = connected;
+            document.getElementById('disconnect').disabled = !connected;
+            document.getElementById('conversationDiv').style.visibility = connected ? 'visible' : 'hidden';
+            document.getElementById('response').innerHTML = '';
+        }
+
+        function connect() {
+
+            var socket = new SockJS('/user');
+            stompClient = Stomp.over(socket);
+
+            stompClient.connect({}, function(frame) {
+
+                setConnected(true);
+                console.log('Connected: ' + frame);
+                stompClient.subscribe('/topic/messages', function(messageOutput) {
+
+                    showMessageOutput(JSON.parse(messageOutput.body));
+                });
+            });
+        }
+
+        function disconnect() {
+
+            if(stompClient != null) {
+                stompClient.disconnect();
+            }
+
+            setConnected(false);
+            console.log("Disconnected");
+        }
+
+        function sendMessage() {
+
+            var username = document.getElementById('username').value;
+            var password = document.getElementById('password').value;
+            var email = document.getElementById('email').value;
+
+            var user = {
+                username: username,
+                password: password,
+                email: email,
+                roles : [
+                    {"id": 1}
+                ]
+            }
+            stompClient.send("/app/users", {}, JSON.stringify(user));
+        }
+
+        function showMessageOutput(messageOutput) {
+
+            var response = document.getElementById('response');
+            var p = document.createElement('p');
+            p.style.wordWrap = 'break-word';
+            p.appendChild(document.createTextNode(messageOutput.username + ": " + messageOutput.email));
+            response.appendChild(p);
+        }
+
+    </script>
+
+</head>
+
+<body onload="disconnect()">
+
+<div>
+
+
+    <div>
+        <input type="text" id="username" placeholder="Choose user name"/>
+    </div>
+    <br />
+    <div>
+        <button id="connect" onclick="connect();">Connect</button>
+        <button id="disconnect" disabled="disabled" onclick="disconnect();">Disconnect</button>
+    </div>
+    <br />
+    <div id="conversationDiv">
+        <input type="password" id="password" placeholder="Password"/>
+        <input type="email" id="email" placeholder="email"/>
+        <button id="sendMessage" onclick="sendMessage();">Register</button>
+        <p id="response"></p>
+    </div>
+</div>
+
+</body>
+</html>
